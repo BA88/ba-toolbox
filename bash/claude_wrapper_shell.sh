@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude CLI wrapper: automatically sets session name (include datetime), color
+# Claude CLI wrapper: automatically sets session name {optional datetime}, color
 #
 # Install
 #   copy this script to local directory, eg, /path/to
@@ -10,7 +10,7 @@
 #     - claude --HELP
 #
 # Project-specific setup (eg, edit .envrc used by direnv):
-#   export CLAUDE_WRAPPER_NAME='CC-My Project'
+#   export CLAUDE_WRAPPER_NAME='CC•My Project'
 #   export CLAUDE_WRAPPER_COLOR='green'
 #   export CLAUDE_WRAPPER_ENABLE_NOW=1
 #
@@ -27,11 +27,8 @@
 #
 # Bare --color or /color with no COLOR follows same priority rules.
 #
-# Color is always the last argv word: "/color NAME". Omitting it lets the
-# CLI pick a non-default hue; the wrapper always passes an explicit color.
-#
-# Priority for datetime stamp:
-#   1. --now  Append current local date and time to resolved session name.
+# Priority for --now datetime stamp:
+#   1. --now: append current local date and time to resolved session name
 #   2. envar CLAUDE_WRAPPER_ENABLE_NOW when set
 #   3. no datetime stamp
 #
@@ -39,7 +36,7 @@
 #   -h, --help     Original Claude CLI help.
 #   -H, --HELP     This wrapper's help (SCRIPT help).
 #
-# Debug: CLAUDE_WRAPPER_DEBUG=1 prints path and resolved command.
+# Debug: CLAUDE_WRAPPER_DEBUG=1 prints script fullpath and resolved command.
 #
 # Timezone: date(1) uses the process timezone. Set TZ for a zone, e.g.
 #   export TZ=America/New_York
@@ -49,8 +46,9 @@
 #   claude                       # basename(cwd) /color default
 #   claude --now                 # basename(cwd) 2026-05-17 14:32 /color default
 #   claude --name 'Other'        # Other /color default
-#   claude '/color blue'         # basename(cwd) '/color blue'
+#   claude '/color blue'         # basename(cwd) blue
 #   claude --color blue          # same as previous
+#   claude --name 'New' --color red  # New red
 #   claude --help                # original Claude help
 #   claude --HELP                # this wrapper script's help
 
