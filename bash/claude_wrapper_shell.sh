@@ -1,37 +1,42 @@
 #!/usr/bin/env bash
-# Claude CLI wrapper: direnv env vars, cwd default name, CLI overrides.
+# Claude CLI wrapper: automatically sets session name (include datetime), color
 #
-# Install (once in ~/.bashrc or ~/.bash_aliases):
-#   source "/path/to/claude_wrapper_shell.sh"
+# Install
+#   copy this script to local directory, eg, /path/to
+#   add to shell initialization script, eg,  ~/.bashrc
+#     source /path/to/claude_wrapper_shell.sh
+#   verify install:
+#     - start new terminal
+#     - claude --HELP
 #
-# Per-project (.envrc via direnv):
+# Project-specific setup (eg, edit .envrc used by direnv):
 #   export CLAUDE_WRAPPER_NAME='CC-My Project'
 #   export CLAUDE_WRAPPER_COLOR='green'
+#   export CLAUDE_WRAPPER_ENABLE_NOW=1
 #
-# Priority for --name:
-#   1. --name on the command line (value optional; see below)
-#   2. CLAUDE_WRAPPER_NAME when set
-#   3. Default: basename of $PWD
-#   Then, if --now (or CLAUDE_WRAPPER_ENABLE_NOW): append timestamp.
+# Priority for --name NAME:
+#   1. --name NAME on the command line
+#   2. envar CLAUDE_WRAPPER_NAME when set
+#   3. basename of $PWD
+#   If --now (or CLAUDE_WRAPPER_ENABLE_NOW) then append timestamp.
 #
-# --name with no value (missing, empty, or next token is any flag) uses
-# basename of $PWD. Flags include /color, --color, --now, and - options.
+# Priority for --color COLOR or /color COLOR:
+#   1. COLOR on the command line
+#   2. envar CLAUDE_WRAPPER_COLOR when set
+#   3. default <-- random color
 #
-# Priority for color:
-#   1. /color COLOR or --color COLOR when COLOR is non-empty on the CLI
-#   2. CLAUDE_WRAPPER_COLOR when set
-#   3. CLAUDE_WRAPPER_DEFAULT_COLOR (default: default)
-#
-# Bare --color or /color with no COLOR uses steps 2-3 (not random /color).
+# Bare --color or /color with no COLOR follows same priority rules.
 #
 # Color is always the last argv word: "/color NAME". Omitting it lets the
 # CLI pick a non-default hue; the wrapper always passes an explicit color.
 #
-# Wrapper-only flag (stripped, not passed to claude):
-#   --now  Append local date and time to the resolved session name.
+# Priority for datetime stamp:
+#   1. --now  Append current local date and time to resolved session name.
+#   2. envar CLAUDE_WRAPPER_ENABLE_NOW when set
+#   3. no datetime stamp
 #
 # Help:
-#   -h, --help     Claude CLI help (no --name or /color injection).
+#   -h, --help     Original Claude CLI help.
 #   -H, --HELP     This wrapper's help (SCRIPT help).
 #
 # Debug: CLAUDE_WRAPPER_DEBUG=1 prints path and resolved command.
@@ -41,15 +46,13 @@
 # Unset TZ uses the system default. This is the usual Unix convention.
 #
 # Examples:
-#   claude                       # ... --name ... '/color default' last
-#   claude -p 'hello'            # -p hello --name ... '/color default' last
-#   claude --now                 # my_project 2026-05-17 14:32
-#   claude --name 'Other'        # Other
-#   claude '/color blue'         # '/color blue' last
-#   claude --color blue          # same as /color blue
-#   claude --name -p 'hello'     # -p is a flag; session name is cwd tail
-#   claude --help                # Claude help (no injection)
-#   claude -H                    # wrapper help
+#   claude                       # basename(cwd) /color default
+#   claude --now                 # basename(cwd) 2026-05-17 14:32 /color default
+#   claude --name 'Other'        # Other /color default
+#   claude '/color blue'         # basename(cwd) '/color blue'
+#   claude --color blue          # same as previous
+#   claude --help                # original Claude help
+#   claude --HELP                # this wrapper script's help
 
 
 # Absolute path to this file (set when sourced or executed).
@@ -125,12 +128,10 @@ Environment variable options:
           Default prompt bar color when --color or /color not specified
   CLAUDE_WRAPPER_DEBUG
           Print the resolved command line before starting Claude
-  CLAUDE_WRAPPER_DEFAULT_COLOR
-          Prompt bar color when nothing else is set
   CLAUDE_WRAPPER_ENABLE_NOW
           Always add date and time to the session title
   CLAUDE_WRAPPER_NAME
-          Default session title when you do not pass --name
+          Default session title when --name not specified
   CLAUDE_WRAPPER_PATH
           Full path to this script (set when you source the file)
   TZ
@@ -278,8 +279,6 @@ _claude_resolve_color_tail() {
     color_name="$_claude_color_value"
   elif [[ -n "${CLAUDE_WRAPPER_COLOR:-}" ]]; then
     color_name="$CLAUDE_WRAPPER_COLOR"
-  else
-    color_name="${CLAUDE_WRAPPER_DEFAULT_COLOR:-default}"
   fi
   if [[ -n "$color_name" ]]; then
     _claude_color_tail="/color ${color_name}"
@@ -296,7 +295,6 @@ _claude_resolve_color_tail() {
 #   CLAUDE_WRAPPER_PATH:          Absolute path to this script (on source).
 #   CLAUDE_WRAPPER_NAME:          Session name when user omits --name.
 #   CLAUDE_WRAPPER_COLOR:         Used when CLI omits COLOR name.
-#   CLAUDE_WRAPPER_DEFAULT_COLOR: When no CLI/env color (default: default).
 #   CLAUDE_WRAPPER_ENABLE_NOW:    If non-empty, always append timestamp.
 #   CLAUDE_WRAPPER_DEBUG:         If non-empty, print path and command.
 #   TZ:                              Optional timezone for --now (see header).

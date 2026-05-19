@@ -1,0 +1,222 @@
+testing claude_wrapper_shell.sh
+
+# --- Setup ---
+cd /Users/bettyannchodkowski/Documents/at_trekker
+source ./claude-shell-function.sh
+export SCRIPT_CLAUDE_CLI_DEBUG=1
+
+# Preset A: no project env
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR
+
+# Preset B: direnv-like (run this block when a section says [B])
+# export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+# export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+
+# --- 1. Baseline [A] ---
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR SCRIPT_CLAUDE_CLI_ENABLE_NOW
+
+claude
+# EXPECT: --name at_trekker only
+
+claude -p 'hello'
+# EXPECT: --name at_trekker, then -p hello
+
+claude --help
+# EXPECT: --name at_trekker, then --help
+
+claude -h
+# EXPECT: --name at_trekker, then -h
+
+
+
+# --- 2. Name [B] ---
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude --name Single
+# EXPECT: --name Single, '/color green'
+
+claude --name 'CC-AT Trekker'
+# EXPECT: --name CC-AT Trekker (one arg, two words)
+
+claude --name 'CC•AT Trekker'
+# EXPECT: --name CC•AT Trekker (unicode bullet ok)
+
+claude --name
+# EXPECT: --name at_trekker (missing value -> cwd tail)
+
+claude --name --now
+# EXPECT: --name "at_trekker YYYY-MM-DD HH:MM"
+
+claude --name --color blue
+# EXPECT: --name at_trekker, '/color blue' (not env green)
+
+claude --name -p 'x'
+# EXPECT: --name at_trekker, -p x (-p is not the name)
+
+claude --name Single --color blue
+# EXPECT: --name Single, '/color blue'
+
+
+# --- 2. Name env vs cwd [A] then [B] ---
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR
+claude
+# EXPECT: --name at_trekker
+
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+claude
+# EXPECT: --name CC-AT Trekker, '/color green'
+
+
+# --- 3. --now [A] ---
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR
+
+claude --now
+# EXPECT: --name "at_trekker YYYY-MM-DD HH:MM"
+
+claude --now --name Other
+# EXPECT: --name "Other YYYY-MM-DD HH:MM"
+
+claude --name Other --now
+# EXPECT: same as above (order swap)
+
+claude --now --color blue
+# EXPECT: timestamp on name, '/color blue'
+
+claude --color blue --now
+# EXPECT: same as above (order swap)
+
+claude --now --name --color blue
+# EXPECT: cwd tail + timestamp, '/color blue'
+
+
+# --- 3. --now [B] ---
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude --now
+# EXPECT: env name + timestamp, '/color green'
+
+
+# --- 4. Color [B] CLI overrides env ---
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude /color blue
+# EXPECT: env name, '/color blue' only (not green)
+
+claude --color blue
+# EXPECT: env name, '/color blue' (never --color)
+
+claude '/color blue'
+# EXPECT: env name, '/color blue' (single-token input)
+
+claude /color
+# EXPECT: env name, '/color' only (missing COLOR)
+
+claude --color
+# EXPECT: env name, '/color' only <-- random color
+
+
+# --- 4. Color no env [A] ---
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR
+
+claude
+# EXPECT: --name at_trekker, no color
+
+claude --color red
+# EXPECT: --name at_trekker, '/color red'
+
+
+
+# --- 4. Color env only [B] ---
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude
+# EXPECT: --name CC-AT Trekker, '/color green'
+
+
+
+
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude --now --name 'My Session' --color blue
+# EXPECT: --name "My Session YYYY-MM-DD HH:MM", '/color blue'
+
+claude --name 'My Session' --now --color blue
+# EXPECT: same semantics as above
+
+claude --color blue --name 'My Session' --now
+# EXPECT: same semantics as above
+
+claude --now --color blue --name 'My Session'
+# EXPECT: same semantics as above
+
+claude '/color blue' --now --name 'My Session'
+# EXPECT: same semantics as above
+
+claude --name 'My Session' '/color blue' --now
+# EXPECT: same semantics as above
+
+
+# --- 6. Precedence [B] ---
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude --name CLI
+# EXPECT: --name CLI, '/color green' from env
+
+claude --color blue
+# EXPECT: --name CC-AT Trekker from env, '/color blue'
+
+claude --name CLI --color blue
+# EXPECT: --name CLI, '/color blue' (no env green)
+
+
+
+# --- 6. Precedence partial env [A] ---
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+claude --name CLI
+# EXPECT: --name CLI, '/color green'
+
+unset SCRIPT_CLAUDE_CLI_NAME SCRIPT_CLAUDE_CLI_COLOR
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+claude --color blue
+# EXPECT: --name CC-AT Trekker, '/color blue'
+
+
+
+export SCRIPT_CLAUDE_CLI_NAME='CC-AT Trekker'
+export SCRIPT_CLAUDE_CLI_COLOR='green'
+
+claude -p 'test prompt'
+# EXPECT: prepend name/color, then -p 'test prompt'
+
+claude --now -p 'x'
+# EXPECT: timestamp name, env color, -p x
+
+claude --name 'N' -p 'x' --color blue
+# EXPECT: --name N, '/color blue', -p x
+
+
+
+export SCRIPT_CLAUDE_CLI_DEBUG=1
+claude --now
+# EXPECT: line "command claude ..." printed, then claude runs
+
+unset SCRIPT_CLAUDE_CLI_DEBUG
+claude --now
+# EXPECT: no "command claude ..." line
+export SCRIPT_CLAUDE_CLI_DEBUG=1
+
+
+
+export TZ=America/New_York
+claude --now
+# EXPECT: timestamp matches: TZ=America/New_York date '+%Y-%m-%d %H:%M'
+
