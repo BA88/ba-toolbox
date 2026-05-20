@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude CLI wrapper: automatically sets session name {optional datetime}, color
+# Set Claude Code's session name and prompt bar color via bash shell wrapper
 #
 # Install
 #   copy this script to local directory, eg, /path/to
@@ -24,8 +24,6 @@
 #   1. COLOR on the command line
 #   2. envar CLAUDE_WRAPPER_COLOR when set
 #   3. default <-- random color
-#
-# Bare --color or /color with no COLOR follows same priority rules.
 #
 # Priority for --now datetime stamp:
 #   1. --now: append current local date and time to resolved session name
@@ -100,7 +98,7 @@ _claude_passthrough_for_claude_help() {
 # Print wrapper usage (stdout). See -H / --HELP.
 _claude_print_help() {
   cat <<'EOF'
-A shell wrapper for the Claude CLI (session name and terminal color).
+Set Claude Code's session name and prompt bar color via bash shell wrapper
 
 Usage: claude [OPTIONS] [CLAUDE_ARGS]...
 
@@ -111,41 +109,59 @@ Arguments:
 Options:
   --color <COLOR>
   /color <COLOR>
-          Claude prompt bar color for this session
+          Prompt bar color for session
   -h, --help
-          Show real Claude CLI help
+          Show real Claude Code CLI help
   -H, --HELP
-          Show this wrapper help
+          Show this wrapper's help
   --name [<NAME>]
-          Session title shown in Claude (directory name if NAME omitted)
+          Session title for session (directory basename if NAME omitted)
   --now
-          Add the current date and time to the session title
+          Add current date and time to session title
 
 Environment variable options:
   CLAUDE_WRAPPER_COLOR
-          Default prompt bar color when --color or /color not specified
+          Prompt bar color when --color or /color not specified
   CLAUDE_WRAPPER_DEBUG
-          Print the resolved command line before starting Claude
+          Print resolved command line before starting Claude
   CLAUDE_WRAPPER_ENABLE_NOW
-          Always add date and time to the session title
+          Always add date and time to session title
   CLAUDE_WRAPPER_NAME
-          Default session title when --name not specified
+          Session title when --name not specified
   CLAUDE_WRAPPER_PATH
-          Full path to this script (set when you source the file)
+          Set to full path to this script (set when you source the file)
   TZ
           Time zone used for --now timestamps
+
+Priority for --name NAME:
+  1. NAME on the command line
+  2. envar CLAUDE_WRAPPER_NAME when set
+  3. basename of current working directory
+  4. If --now (or envar CLAUDE_WRAPPER_ENABLE_NOW is set) then append timestamp.
+
+Priority for --color COLOR or /color COLOR:
+  1. COLOR on the command line
+  2. envar CLAUDE_WRAPPER_COLOR when set
+  3. default <-- random color
+
+Priority for --now:
+  1. --now: append current local date and time to resolved session name
+  2. append datetime if envar CLAUDE_WRAPPER_ENABLE_NOW is set
+  3. no datetime stamp
 
 Examples:
   claude
           Start Claude; session title is this directory basename; color is random
   claude --name 'CC•My Project'
-          Session title CC•My Project; color from env or random
+          Session title 'CC•My Project'; color from env or random
   claude --now
           Session title is directory basename plus current date and time
   claude --color blue
           Blue prompt bar color for this session
   claude --color
-          prompt bar color from CLAUDE_WRAPPER_COLOR, or random if unset
+          Prompt bar color from CLAUDE_WRAPPER_COLOR, or random if unset
+  claude --name 'CC•My Project'  --color blue  --now
+          'CC•My Project' + datetime + blue
   claude --help
           Claude program help only
   claude -H
@@ -161,7 +177,7 @@ Install:
   Per-project (eg, add to direnv's .envrc):
     source '${path}'
     export CLAUDE_WRAPPER_NAME='CC•My Project'
-    export CLAUDE_WRAPPER_COLOR='red'
+    export CLAUDE_WRAPPER_COLOR='blue'
     export CLAUDE_WRAPPER_ENABLE_NOW=1
 
   CLAUDE_WRAPPER_PATH is set to this file's full pathname when sourced.
